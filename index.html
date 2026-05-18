@@ -163,7 +163,7 @@
         <div class="base-location-box">
             <label for="baseAddress">📍 어디 주변의 휴식 공간을 찾을까요?</label>
             <div class="input-group">
-                <input type="text" id="baseAddress" placeholder="예: 한강진역, 충주호, 경포대 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
+                <input type="text" id="baseAddress" placeholder="예: 춘천역, 단양, 해운대 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
                 <button onclick="setBaseLocation()">설정</button>
             </div>
         </div>
@@ -249,9 +249,6 @@
         updateSelectOptions('nature');
         getCurrentLocation();
         renderHistoryList();
-
-        // [추가 기능] 사용자가 지도를 움직이거나 줌을 변경할 때마다 자동으로 재검색하고 싶다면 아래 주석을 해제해봐!
-        // kakao.maps.event.addListener(map, 'idle', function() { if (currentTab !== 'history') searchPlaces(); });
     });
 
     function getCurrentLocation() {
@@ -352,14 +349,23 @@
         }
     }
 
-    // ── [동적 범위 수정] 지도의 확대/축소 영역 기반 바운드 검색 전환 ──
+    // ── [오류 수정 핵심] 카카오 API 범위 과부하 방지 안전장치 도입 ──
     function searchPlaces() {
         const selectedType = document.getElementById('placeType').value;
-        const searchOptions = {
-            // location과 radius(5000)를 완전히 제거하고 현재 지도 화면 범위를 지정!
-            bounds: map.getBounds(), 
+        const currentLevel = map.getLevel(); // 현재 지도의 축소 상태 레벨 확인
+        
+        let searchOptions = {
             sort: kakao.maps.services.SortBy.DISTANCE
         };
+
+        // 지도가 너무 축소된 상태(레벨 8 이상 = 전국 단위 수준)일 때는 bounds 대신 최대 반경(20km) 검색으로 우회
+        if (currentLevel >= 8) {
+            searchOptions.location = map.getCenter();
+            searchOptions.radius = 20000; // 카카오 API 최대 허용 반경인 20km로 설정하여 에러 원천 차단
+        } else {
+            // 적당히 확대된 상태에서는 화면에 보이는 사각형 영역(bounds) 기반 정밀 검색
+            searchOptions.bounds = map.getBounds();
+        }
 
         if (selectedType === '강' || selectedType === '호수') {
             searchOptions.category_group_code = 'AT4'; 
@@ -402,12 +408,13 @@
             if (filteredPlaces.length > 0) {
                 displayPlaces(filteredPlaces);
             } else {
-                alert('현재 지도 화면 안에 상업 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다. 지도를 조금 더 축소(Zoom Out)해 보세요!');
+                alert('이 범위 안에는 상업 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다. 지도를 움직이거나 범위를 조정해 보세요!');
             }
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-            alert('현재 화면 범위 내에 해당 공간이 존재하지 않습니다. 지도를 축소해서 범위를 넓혀보세요!');
+            alert('현재 검색 범위 내에 휴식 공간이 존재하지 않습니다. 검색어를 바꾸거나 위치를 이동해 보세요!');
         } else {
-            alert('검색 중 시스템 오류가 발생했습니다.');
+            console.error("카카오맵 API 응답 상태 오류 코드:", status);
+            alert('검색 범위를 카카오 지도 허용치에 맞추기 위해 조절했습니다. 지도를 조금만 확대(Zoom-in)한 후 다시 🔍 버튼을 눌러주세요!');
         }
     }
 
@@ -437,7 +444,7 @@
             listEl.appendChild(itemEl);
         }
         
-        // 지도를 전국 단위로 너무 크게 줄였을 때는 bounds 조정을 생략하여 사용자의 줌 상태를 유지해줌
+        // 광역 범위(레벨 7 이하)일 때만 자동 줌 피팅을 작동시켜 화면 튕김 현상 방지
         if(map.getLevel() <= 7) {
             map.setBounds(bounds);
         }
