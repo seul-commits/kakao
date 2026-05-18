@@ -7,60 +7,85 @@
     <style>
         /* 기본 스타일 초기화 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', sans-serif; }
+        body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', sans-serif; background-color: #fdfbf7; }
 
         /* 화면 분할 레이아웃 (왼쪽: 사이드바, 오른쪽: 지도) */
         .container { display: flex; width: 100%; height: 100vh; }
 
-        /* 사이드바 스타일 */
+        /* 사이드바 스타일 (따뜻한 아이보리 톤) */
         #sidebar {
             width: 350px;
             height: 100%;
-            background: #f8f9fa;
+            background: #fdfbf7;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #ddd;
+            border-right: 1px solid #eaddcd;
             z-index: 10;
         }
 
         /* 검색창 영역 */
-        .search-box { padding: 20px; background: #fff; border-bottom: 1px solid #eee; display: flex; gap: 5px; }
+        .search-box { padding: 20px 20px 10px 20px; background: #fff; display: flex; gap: 8px; }
         .search-box select {
             width: 80%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid #eaddcd;
+            border-radius: 8px;
             font-size: 14px;
             background-color: #fff;
+            color: #555;
+            outline: none;
         }
         .search-box button {
             width: 20%;
-            padding: 10px;
-            background: #fee500; /* 카카오 노란색 */
+            padding: 12px;
+            background: #ffe3d1; /* 파스텔 피치 톤 */
+            color: #855845;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 16px;
-        }
-        .search-box button:hover { background: #fada0a; }
-
-        /* 검색 결과 리스트 영역 */
-        #placesList { flex: 1; overflow-y: auto; padding: 10px; }
-        .place-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            cursor: pointer;
             transition: background 0.2s;
         }
-        .place-item:hover { background: #f0f0f0; }
-        .place-item h5 { color: #333; margin-bottom: 5px; font-size: 15px; }
-        .place-item p { font-size: 13px; color: #666; margin-bottom: 3px; }
-        .place-item .phone { color: #007bff; font-size: 12px; display: block; }
-        .place-item .hours { font-size: 12px; color: #999; margin-top: 5px; }
+        .search-box button:hover { background: #ffd3b6; }
+
+        /* 탭 메뉴 스타일 (검색결과 / 검색기록) */
+        .tab-menu { display: flex; background: #f5efe6; padding: 4px; margin: 10px 20px; border-radius: 8px; }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #8c7b6c;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { background: #fff; color: #ff8b66; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+
+        /* 리스트 영역 공통 스크롤바 설정 */
+        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px; }
+        .list-container::-webkit-scrollbar { width: 6px; }
+        .list-container::-webkit-scrollbar-thumb { background: #eaddcd; border-radius: 4px; }
+
+        /* 장소 아이템 카드 스타일 (둥글고 심플한 템플릿) */
+        .place-item {
+            padding: 16px;
+            border: 1px solid #f3ece1;
+            background: #fff;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(165, 140, 115, 0.04);
+            transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+        }
+        .place-item:hover { transform: translateY(-1px); border-color: #ffd3b6; background-color: #fffbf7; }
+        .place-item h5 { color: #4a3e3d; margin-bottom: 6px; font-size: 15px; font-weight: bold; }
+        .place-item p { font-size: 12px; color: #8c7b6c; margin-bottom: 4px; line-height: 1.4; }
+        .place-item .phone { color: #ffa27b; font-size: 11px; font-weight: bold; display: block; }
+        .place-item .hours { font-size: 11px; color: #bcaaa4; margin-top: 6px; }
 
         /* 지도 영역 */
         #map { flex: 1; height: 100%; }
@@ -72,18 +97,28 @@
     <div id="sidebar">
         <div class="search-box">
             <select id="placeType">
-                <option value="산">⛰️ 산</option>
-                <option value="공원">🌳 공원</option>
-                <option value="호수">🏞️ 호수</option>
-                <option value="강">🌊 강</option>
-                <option value="도서관">📚 도서관</option>
-                <option value="미술관">🎨 미술관</option>
-                <option value="박물관">🏛️ 박물관</option>
+                <option value="산">⛰️ 포근한 산</option>
+                <option value="공원">🌳 한적한 공원</option>
+                <option value="호수">🏞️ 잔잔한 호수</option>
+                <option value="강">🌊 시원한 강가</option>
+                <option value="도서관">📚 조용한 도서관</option>
+                <option value="미술관">🎨 아늑한 미술관</option>
+                <option value="박물관">🏛️ 깊이있는 박물관</option>
             </select>
             <button onclick="searchPlaces()">🔍</button>
         </div>
-        <div id="placesList">
-            <p style="text-align: center; color: #999; margin-top: 20px;">원하는 휴식 공간 유형을 선택하고 검색해보세요!</p>
+
+        <div class="tab-menu">
+            <button id="tabResults" class="tab-btn active" onclick="switchTab('results')">검색 결과</button>
+            <button id="tabHistory" class="tab-btn" onclick="switchTab('history')">내가 본 장소</button>
+        </div>
+
+        <div id="placesList" class="list-container">
+            <p style="text-align: center; color: #bcaaa4; margin-top: 30px; font-size: 13px;">원하는 휴식 공간을 선택하고 검색해보세요!</p>
+        </div>
+
+        <div id="historyList" class="list-container" style="display: none;">
+            <p style="text-align: center; color: #bcaaa4; margin-top: 30px; font-size: 13px;">아직 둘러본 장소가 없어요.</p>
         </div>
     </div>
 
@@ -98,9 +133,10 @@
     let infowindow; // 정보창 객체
     let clusterer; // 마커 클러스터러 객체
     let markers = []; // 검색된 마커들을 저장하는 배열
-    let currentType = ''; // 현재 선택된 장소 유형 저장 변수
+    let currentType = ''; // 현재 선택된 장소 유형
+    let searchHistory = JSON.parse(localStorage.getItem('restSpaceHistory')) || []; // 브라우저 로컬스토리지에서 기존 기록 불러오기
 
-    // 장소 유형별 마커 이미지 URL 매핑 테이블 (구글 정적 마커 아이콘 활용)
+    // 장소 유형별 마커 이미지 매핑 (구글 정적 마커 오픈소스 활용)
     const markerImages = {
         '산': 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
         '공원': 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
@@ -111,33 +147,31 @@
         '박물관': 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png'
     };
 
-    // 1. SDK 로드 후 지도 및 기본 서비스 초기화
+    // 1. 지도 초기화 및 인프라 구축
     kakao.maps.load(function() {
         const mapContainer = document.getElementById('map');
         const mapOptions = {
-            center: new kakao.maps.LatLng(37.566826, 126.9786567), // 기본 위치 (서울시청)
-            level: 5 // 확대 레벨
+            center: new kakao.maps.LatLng(37.566826, 126.9786567), // 기본 서울시청 위치
+            level: 5
         };
 
-        // 지도 생성
         map = new kakao.maps.Map(mapContainer, mapOptions);
-        
-        // 장소 검색 객체 및 정보창 생성
         ps = new kakao.maps.services.Places();
         infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
 
-        // 마커 클러스터러 초기화
+        // 마커를 그룹화해주는 클러스터러 설정
         clusterer = new kakao.maps.MarkerClusterer({
-            map: map, // 마커들이 표시될 지도 객체
-            averageCenter: true, // 클러스터 마커의 위치를 평균 좌표로 설정
-            minLevel: 6 // 클러스터러가 적용될 최소 지도 레벨
+            map: map,
+            averageCenter: true,
+            minLevel: 6
         });
 
-        // 2. 접속자의 현재 위치 가져오기 (Geolocation)
+        // 사용자의 현재 위치 가져오기 및 기록 리스트 렌더링
         getCurrentLocation();
+        renderHistoryList();
     });
 
-    // 사용자의 현재 위치를 받아와서 지도의 중심을 옮기고 표시하는 함수
+    // 현재 위치를 추적하여 중심점을 이동시키는 함수
     function getCurrentLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
@@ -145,149 +179,215 @@
                 const lon = position.coords.longitude;
                 const locPosition = new kakao.maps.LatLng(lat, lon);
 
-                map.setCenter(locPosition); // 지도의 중심을 현재 위치로 이동
+                map.setCenter(locPosition);
                 
-                // 현재 위치에는 카카오 기본 마커를 띄워 검색 결과 마커와 구분
+                // 내 위치 전용 기본 마커 생성
                 const currentMarker = new kakao.maps.Marker({
                     position: locPosition,
                     map: map
                 });
 
-                // 현재 위치 마커에 툴팁 추가
                 const currentInfoWindow = new kakao.maps.InfoWindow({
-                    content: '<div style="padding:5px; font-size:12px; text-align:center;">내 현재 위치</div>'
+                    content: '<div style="padding:6px; font-size:11px; text-align:center; color:#855845; font-family:\'Malgun Gothic\'; font-weight:bold;">📍 현재 내 위치</div>'
                 });
                 currentInfoWindow.open(map, currentMarker);
 
             }, function(error) {
-                console.error("위치 정보를 가져오는데 실패했습니다.", error);
+                console.error("위치 정보를 불러오지 못했습니다.", error);
             });
         }
     }
 
-    // 선택된 장소 유형 키워드로 주변 검색을 실행하는 함수
-    function searchPlaces() {
-        const selectBox = document.getElementById('placeType');
-        currentType = selectBox.value; // 현재 선택된 타입 업데이트 (마커 색상 지정용)
+    // 사이드바 내부의 검색결과 / 검색기록 탭을 스위칭하는 함수
+    function switchTab(tabName) {
+        const resultsList = document.getElementById('placesList');
+        const historyList = document.getElementById('historyList');
+        const tabResults = document.getElementById('tabResults');
+        const tabHistory = document.getElementById('tabHistory');
 
-        // 현재 지도 중심 좌표를 기준으로 주변 장소를 검색하는 옵션 설정
-        const searchOptions = {
-            location: map.getCenter(), // 지도의 현재 중심좌표 기준
-            radius: 5000, // 중심 기준 반경 5km 이내
-            sort: kakao.maps.services.SortBy.DISTANCE // 거리순 정렬
-        };
-
-        // 카카오 장소 검색 API 호출 (키워드, 콜백함수, 옵션)
-        ps.keywordSearch(currentType, placesSearchCB, searchOptions);
-    }
-
-    // 장소 검색 완료 시 호출되는 콜백 함수
-    function placesSearchCB(data, status, pagination) {
-        if (status === kakao.maps.services.Status.OK) {
-            displayPlaces(data); // 검색 결과를 리스트와 마커로 표시
-        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-            alert('주변에 해당 유형의 휴식 공간이 존재하지 않습니다.');
-        } else if (status === kakao.maps.services.Status.ERROR) {
-            alert('검색 중 오류가 발생했습니다.');
+        if (tabName === 'results') {
+            resultsList.style.display = 'block';
+            historyList.style.display = 'none';
+            tabResults.classList.add('active');
+            tabHistory.classList.remove('active');
+        } else {
+            resultsList.style.display = 'none';
+            historyList.style.display = 'block';
+            tabResults.classList.remove('active');
+            tabHistory.classList.add('active');
+            renderHistoryList(); // 최신 기록 상태로 다시 그리기
         }
     }
 
-    // 검색 결과 리스트와 마커를 화면에 표시하는 함수
+    // 장소 검색 실행 함수
+    function searchPlaces() {
+        const selectBox = document.getElementById('placeType');
+        currentType = selectBox.value;
+
+        const searchOptions = {
+            location: map.getCenter(),
+            radius: 5000, // 5km 이내 주변 탐색
+            sort: kakao.maps.services.SortBy.DISTANCE
+        };
+
+        ps.keywordSearch(currentType, placesSearchCB, searchOptions);
+        switchTab('results'); // 검색창 누르면 자동으로 결과 탭으로 이동
+    }
+
+    // 검색 결과 콜백 함수
+    function placesSearchCB(data, status, pagination) {
+        if (status === kakao.maps.services.Status.OK) {
+            displayPlaces(data);
+        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+            alert('주변 5km 안에 해당 휴식 공간이 없어요.');
+        } else if (status === kakao.maps.services.Status.ERROR) {
+            alert('검색 중 알 수 없는 시스템 오류가 발생했습니다.');
+        }
+    }
+
+    // 검색 결과를 화면 및 지도에 그려주는 메인 렌더 함수
     function displayPlaces(places) {
         const listEl = document.getElementById('placesList');
         const bounds = new kakao.maps.LatLngBounds();
         
-        clearMap(); // 기존 마커 및 클러스터러 초기화
-        listEl.innerHTML = ''; // 기존 리스트 텍스트 초기화
+        clearMap(); // 지도 위 기존 마커 지우기
+        listEl.innerHTML = '';
 
         for (let i = 0; i < places.length; i++) {
             const placePosition = new kakao.maps.LatLng(places[i].y, places[i].x);
-            const marker = createMarker(placePosition, currentType); // 조건별 색상 마커 생성
-            const itemEl = getListItem(i, places[i]); // 리스트 아이템 생성
+            const marker = createMarker(placePosition, currentType);
+            const itemEl = getListItem(places[i]);
 
-            // 지도 영역 조정을 위해 좌표 범위 확장
             bounds.extend(placePosition);
 
-            // 마커와 리스트 아이템에 클릭 이벤트 바인딩 처리
+            // 이벤트 바인딩 내부 구조 처리
             (function(marker, placeData) {
-                // 마커 클릭 시 상세 팝업 표시
+                // 마커 클릭 시 정보창 열기 + 검색 기록 저장
                 kakao.maps.event.addListener(marker, 'click', function() {
                     displayInfowindow(marker, placeData);
+                    saveToHistory(placeData);
                 });
 
-                // 사이드바 리스트 아이템 클릭 시 상세 팝업 표시 및 지도 부드럽게 이동
+                // 리스트 아이템 클릭 시 지도 이동 + 정보창 열기 + 검색 기록 저장
                 itemEl.onclick = function() {
                     displayInfowindow(marker, placeData);
                     map.panTo(marker.getPosition());
+                    saveToHistory(placeData);
                 };
             })(marker, places[i]);
 
             listEl.appendChild(itemEl);
         }
 
-        // 생성된 모든 마커들을 클러스터러(군집화)에 추가
+        // 새로운 마커 무리들을 군집화(클러스터러)에 등록
         clusterer.addMarkers(markers);
-
-        // 검색된 장소들이 모두 화면에 보이도록 지도 범위 조정
         map.setBounds(bounds);
     }
 
-    // 조건별 색상을 적용한 마커 객체를 생성하는 함수
+    // 맞춤형 색상 마커를 찍어주는 팩토리 함수
     function createMarker(position, type) {
         const imageSrc = markerImages[type] || 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
-        const imageSize = new kakao.maps.Size(32, 32); // 마커 이미지 크기 설정
+        const imageSize = new kakao.maps.Size(32, 32);
         const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
 
         const marker = new kakao.maps.Marker({
             position: position,
-            image: markerImage // 커스텀 마커 이미지 적용
+            image: markerImage
         });
 
-        markers.push(marker); // 추후 삭제 관리를 위해 배열에 추가
+        markers.push(marker);
         return marker;
     }
 
-    // 리스트 아이템 HTML 요소를 동적으로 구성하는 함수
-    function getListItem(index, place) {
+    // 리스트 아이템 UI 노드 생성 함수
+    function getListItem(place) {
         const el = document.createElement('div');
         el.className = 'place-item';
         
-        // 기관 유형이거나 전화번호가 있을 경우만 랜더링 처리
-        const phoneContent = place.phone ? `<span class="phone">📞 ${place.phone}</span>` : `<span class="phone" style="color:#aaa;">📞 전화번호 정보 없음</span>`;
+        const phoneContent = place.phone ? `<span class="phone">📞 ${place.phone}</span>` : `<span class="phone" style="color:#ccc;">📞 번호 정보 없음</span>`;
         
         el.innerHTML = `
             <h5>${place.place_name}</h5>
             <p>${place.road_address_name || place.address_name}</p>
             ${phoneContent}
-            <p class="hours">🕒 영업시간: 아래 상세보기 링크 참조</p>
+            <p class="hours">🕒 상세 영업시간은 아래 상세보기 참조</p>
         `;
         return el;
     }
 
-    // 마커 클릭 시 노출될 상세 팝업창(InfoWindow) 내용 구성 함수
+    // 특정 장소를 검색 기록 배열에 추가 및 로컬스토리지 동기화 함수
+    function saveToHistory(place) {
+        // 중복 데이터 방지 (동일한 ID가 있으면 배열에서 우선 제거)
+        searchHistory = searchHistory.filter(item => item.id !== place.id);
+        
+        // 새로운 기록을 리스트 최상단(맨 앞)에 삽입
+        searchHistory.unshift(place);
+        
+        // 최대 20개까지만 기록 유지 관리
+        if (searchHistory.length > 20) {
+            searchHistory.pop();
+        }
+        
+        // 브라우저에 저장
+        localStorage.setItem('restSpaceHistory', JSON.stringify(searchHistory));
+    }
+
+    // 저장된 기록들을 사이드바에 렌더링해주는 함수
+    function renderHistoryList() {
+        const historyEl = document.getElementById('historyList');
+        historyEl.innerHTML = '';
+
+        if (searchHistory.length === 0) {
+            historyEl.innerHTML = '<p style="text-align: center; color: #bcaaa4; margin-top: 30px; font-size: 13px;">아직 둘러본 장소가 없어요.</p>';
+            return;
+        }
+
+        searchHistory.forEach(function(place) {
+            const itemEl = getListItem(place);
+            
+            // 기록 탭의 카드를 누르면 지도가 해당 좌표로 이동하고 팝업창을 직접 출력
+            itemEl.onclick = function() {
+                const moveLatLon = new kakao.maps.LatLng(place.y, place.x);
+                map.panTo(moveLatLon);
+                displayInfowindow(null, place); // 마커가 없는 상태에서도 좌표 기준으로 팝업 창 생성
+            };
+
+            historyEl.appendChild(itemEl);
+        });
+    }
+
+    // 마커 상세 내용 정보창(InfoWindow) 오픈 함수
     function displayInfowindow(marker, place) {
         const content = `
-            <div style="padding:15px; min-width:240px; line-height:1.6; font-size:13px; font-family:'Malgun Gothic',sans-serif;">
-                <h5 style="margin:0 0 6px 0; font-size:15px; color:#333; font-weight:bold;">${place.place_name}</h5>
-                <p style="margin:0 0 4px 0; color:#666; font-size:12px;">📍 ${place.road_address_name || place.address_name}</p>
-                <p style="margin:0 0 8px 0; color:#007bff; font-size:12px;">📞 ${place.phone || '전화번호 정보 없음'}</p>
-                <div style="text-align:right; margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
-                    <a href="${place.place_url}" target="_blank" style="display:inline-block; background:#fee500; color:#333; padding:4px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">상세보기 ↗</a>
+            <div style="padding:16px; min-width:250px; line-height:1.6; font-family:'Malgun Gothic',sans-serif; border-radius:10px;">
+                <h5 style="margin:0 0 6px 0; font-size:14px; color:#4a3e3d; font-weight:bold;">${place.place_name}</h5>
+                <p style="margin:0 0 4px 0; color:#8c7b6c; font-size:11px; line-height:1.4;">📍 ${place.road_address_name || place.address_name}</p>
+                <p style="margin:0 0 10px 0; color:#ffa27b; font-size:11px; font-weight:bold;">📞 ${place.phone || '번호 정보 없음'}</p>
+                <div style="text-align:right; margin-top:10px; border-top:1px solid #f3ece1; padding-top:8px;">
+                    <a href="${place.place_url}" target="_blank" style="display:inline-block; background:#ffe3d1; color:#855845; padding:4px 10px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:11px;">상세보기 ↗</a>
                 </div>
             </div>
         `;
+        
         infowindow.setContent(content);
-        infowindow.open(map, marker);
+
+        if (marker) {
+            infowindow.open(map, marker);
+        } else {
+            // 마커 없이 기록 탭을 통해 좌표 정보만 넘어올 경우의 대응 레이아웃 처리
+            infowindow.setPosition(new kakao.maps.LatLng(place.y, place.x));
+            infowindow.open(map);
+        }
     }
 
-    // 새로운 검색을 수행할 때 지도 위의 마커와 클러스터러 정보를 깨끗이 비워주는 함수
+    // 새로운 테마 검색 시 이전 마커와 클러스터러 흔적을 청소하는 함수
     function clearMap() {
-        clusterer.clear(); // 클러스터러 초기화
+        clusterer.clear();
         for (let i = 0; i < markers.length; i++) {
-            markers[i].setMap(null); // 지도에서 마커 제거
+            markers[i].setMap(null);
         }
-        markers = []; // 마커 관리 배열 초기화
-        infowindow.close(); // 열려있던 정보창 닫기
+        markers = [];
+        infowindow.close();
     }
 </script>
 
