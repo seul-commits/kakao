@@ -1,204 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘, 어디서 쉴까? - 휴식 공간 찾기</title>
-    <style>
-        /* 기본 스타일 초기화 및 따뜻한 아이보리 베이스 설정 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', sans-serif; background-color: #faf7f2; color: #5c4f43; }
-
-        /* 화면 분할 레이아웃 (왼쪽: 사이드바, 오른쪽: 지도) */
-        .container { display: flex; width: 100%; height: 100vh; position: relative; }
-
-        /* 사이드바 스타일 */
-        #sidebar {
-            width: 360px;
-            height: 100%;
-            background: #fdfbf9;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #e6dfd5;
-            z-index: 10;
-            box-shadow: 2px 0 10px rgba(92, 79, 67, 0.05);
-        }
-
-        /* 기준 위치 검색 영역 */
-        .base-location-box { padding: 18px 20px 12px 20px; background: #fff; border-bottom: 1px solid #f2ede4; }
-        .base-location-box label { font-size: 12px; font-weight: bold; color: #a19283; display: block; margin-bottom: 6px; }
-        .input-group { display: flex; gap: 6px; }
-        .input-group input {
-            flex: 1;
-            padding: 10px 12px;
-            border: 1px solid #e6dfd5;
-            border-radius: 8px;
-            font-size: 13px;
-            background-color: #faf7f2;
-            outline: none;
-            color: #5c4f43;
-        }
-        .input-group input::placeholder { color: #c2b7ac; }
-        .input-group button {
-            padding: 0 14px;
-            background: #ebdccb;
-            color: #5c4f43;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-        .input-group button:hover { background: #dfcebc; }
-
-        /* 메인 카테고리 탭 메뉴 */
-        .tab-menu { display: flex; background: #f2ede4; padding: 4px; margin: 12px 20px 6px 20px; border-radius: 10px; }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            color: #8c7f70;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .tab-btn.active { background: #fff; color: #d47a55; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-
-        /* 세부 장소 선택 및 검색 영역 */
-        .search-box { padding: 8px 20px 12px 20px; display: flex; gap: 6px; }
-        .search-box select {
-            flex: 1;
-            padding: 11px;
-            border: 1px solid #e6dfd5;
-            border-radius: 8px;
-            font-size: 13px;
-            background-color: #fff;
-            color: #5c4f43;
-            outline: none;
-        }
-        .search-box button {
-            width: 45px;
-            background: #ffe6d5; 
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.2s;
-        }
-        .search-box button:hover { background: #ffd4ba; }
-
-        /* 스크롤 가능한 리스트 컨테이너 */
-        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px; }
-        .list-container::-webkit-scrollbar { width: 5px; }
-        .list-container::-webkit-scrollbar-thumb { background: #e6dfd5; border-radius: 10px; }
-
-        /* 장소 정보 카드 스타일 */
-        .place-item {
-            padding: 16px;
-            border: 1px solid #f2ede4;
-            background: #fff;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(92, 79, 67, 0.02);
-            transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
-        }
-        .place-item:hover { transform: translateY(-1px); border-color: #ffd4ba; background-color: #fffdfa; }
-        .place-item h5 { color: #40362d; margin-bottom: 6px; font-size: 15px; font-weight: bold; }
-        .place-item p { font-size: 12px; color: #8c7f70; margin-bottom: 4px; line-height: 1.4; }
-        .place-item .phone { color: #db8a5c; font-size: 11px; font-weight: bold; display: block; }
-        .place-item .hours { font-size: 11px; color: #b5a99c; margin-top: 6px; }
-
-        /* 지도 영역 */
-        #map { flex: 1; height: 100%; background-color: #f4f1ea; position: relative; }
-
-        /* 지도 위 부유하는 감성 타이틀 바 스타일 */
-        .floating-title {
-            position: absolute;
-            top: 16px;
-            left: 376px; 
-            z-index: 15;
-            background: rgba(255, 255, 255, 0.88);
-            padding: 10px 22px;
-            border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(92, 79, 67, 0.08);
-            backdrop-filter: blur(4px);
-            border: 1px solid #ebdccb;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .floating-title span { font-size: 16px; }
-        .floating-title h2 { font-size: 14px; font-weight: bold; color: #5c4f43; margin: 0; letter-spacing: -0.5px; }
-
-        /* CSS 기반 파스텔톤 커스텀 마커 스타일 */
-        .custom-pin {
-            width: 28px;
-            height: 28px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            box-shadow: -2px 2px 4px rgba(0,0,0,0.15);
-            border: 2px solid #ffffff;
-            cursor: pointer;
-        }
-        /* 기준점을 위한 펄스 마커 스타일 */
-        .base-pin {
-            width: 16px;
-            height: 16px;
-            background-color: #d47a55;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 8px rgba(212, 122, 85, 0.6);
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div id="sidebar">
-        <div class="base-location-box">
-            <label for="baseAddress">📍 어디 주변의 휴식 공간을 찾을까요?</label>
-            <div class="input-group">
-                <input type="text" id="baseAddress" placeholder="예: 정발산역, 광교호수공원, 남산 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
-                <button onclick="setBaseLocation()">설정</button>
-            </div>
-        </div>
-
-        <div class="tab-menu">
-            <button id="tabNature" class="tab-btn active" onclick="switchTab('nature')">🌿 자연 휴식</button>
-            <button id="tabHumanities" class="tab-btn" onclick="switchTab('humanities')">🏛️ 인문 휴식</button>
-            <button id="tabHistory" class="tab-btn" onclick="switchTab('history')">🤎 내가 본 곳</button>
-        </div>
-
-        <div class="search-box" id="searchBoxWrapper">
-            <select id="placeType">
-                </select>
-            <button onclick="searchPlaces()">🔍</button>
-        </div>
-
-        <div id="placesList" class="list-container">
-            <p style="text-align: center; color: #b5a99c; margin-top: 40px; font-size: 13px;">상단의 세부 카테고리를 선택해 검색해보세요!</p>
-        </div>
-
-        <div id="historyList" class="list-container" style="display: none;">
-            <p style="text-align: center; color: #b5a99c; margin-top: 40px; font-size: 13px;">아직 살펴본 장소가 없습니다.</p>
-        </div>
-    </div>
-
-    <div id="map">
-        <div class="floating-title">
-            <span>🍃</span>
-            <h2>오늘, 어디서 쉴까?</h2>
-        </div>
-    </div>
-</div>
-
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=891c7de69800b4faa1fc5533947983f5&libraries=services,clusterer&autoload=false"></script>
-
 <script>
     let map; 
     let ps; 
@@ -209,7 +8,6 @@
     let currentTab = 'nature'; 
     let searchHistory = JSON.parse(localStorage.getItem('restSpaceHistory')) || []; 
 
-    // 기준점 중심 좌표 변수 (초기값 서울시청)
     let currentCenterLatLng = new kakao.maps.LatLng(37.566826, 126.9786567);
 
     const markerColors = {
@@ -352,21 +150,25 @@
         }
     }
 
-    // ── [수정] 범위 확장 코드를 전면 삭제하고 원래의 반경 5km 고정형으로 환원 ──
+    // [개선] 카테고리 그룹 코드가 인문학 시설 검색을 방해하지 않도록 분기 처리
     function searchPlaces() {
         const selectedType = document.getElementById('placeType').value;
         
         const searchOptions = {
-            location: currentCenterLatLng, // 설정된 기준점 중심
-            radius: 5000,                  // 요청했던 반경 5km 고정 검색
-            sort: kakao.maps.services.SortBy.DISTANCE,
-            category_group_code: 'AT4'     // 원본 소스 정밀 추출용 관광명소 시스템 코드
+            location: currentCenterLatLng, 
+            radius: 5000,                  
+            sort: kakao.maps.services.SortBy.DISTANCE
         };
+
+        // 산, 공원, 호수, 강일 때만 관광명소(AT4) 코드를 넣어서 상업 매장을 1차 필터링합니다.
+        if (['산', '공원', '호수', '강'].includes(selectedType)) {
+            searchOptions.category_group_code = 'AT4';
+        }
 
         ps.keywordSearch(selectedType, placesSearchCB, searchOptions);
     }
 
-    // ── 카카오 공식 카테고리 깊이 매칭 검증기 (상업 매장 원천 배제) ──
+    // [개선] startsWith 대신 includes를 사용하여 카카오의 유연한 카테고리 텍스트를 안전하게 매칭
     function placesSearchCB(data, status) {
         if (status === kakao.maps.services.Status.OK) {
             const selectedType = document.getElementById('placeType').value;
@@ -375,25 +177,25 @@
                 const category = place.category_name; 
 
                 if (selectedType === '산') {
-                    return category.startsWith('자연 > 산');
+                    return category.includes('자연 > 산') || category.includes('지형 > 산');
                 } 
                 else if (selectedType === '공원') {
-                    return category.startsWith('자연 > 공원');
+                    return category.includes('공원');
                 } 
                 else if (selectedType === '호수') {
-                    return category.startsWith('자연 > 호수');
+                    return category.includes('호수') || category.includes('저수지');
                 } 
                 else if (selectedType === '강') {
-                    return category.startsWith('자연 > 강');
+                    return category.includes('강') || category.includes('계곡');
                 } 
                 else if (selectedType === '도서관') {
-                    return category.includes('문화시설 > 도서관');
+                    return category.includes('도서관');
                 } 
                 else if (selectedType === '미술관') {
-                    return category.includes('문화시설 > 미술관');
+                    return category.includes('미술관');
                 } 
                 else if (selectedType === '박물관') {
-                    return category.includes('문화시설 > 박물관');
+                    return category.includes('박물관');
                 }
                 
                 return false;
@@ -402,7 +204,7 @@
             if (filteredPlaces.length > 0) {
                 displayPlaces(filteredPlaces);
             } else {
-                alert('설정하신 기준점 주변 5km 이내에 카카오맵 분류가 정확히 일치하는 순수 휴식 시설/지형이 없습니다.');
+                alert('주변 5km 이내에 카카오맵 분류가 정확히 일치하는 순수 휴식 시설/지형이 없습니다.');
             }
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
             alert('주변 5km 이내에 해당 장소 결과가 아예 존재하지 않습니다.');
@@ -437,7 +239,6 @@
             listEl.appendChild(itemEl);
         }
         
-        // 반경 5km 검색 결과물에 깔끔하게 맞춤 화면 지정
         map.setBounds(bounds);
     }
 
@@ -537,6 +338,3 @@
         infowindow.close();
     }
 </script>
-
-</body>
-</html>
