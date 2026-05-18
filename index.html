@@ -349,6 +349,7 @@
         }
     }
 
+    // ── [강/호수 버그 수정] 카카오 카테고리 그룹 코드를 이용한 정밀화 ──
     function searchPlaces() {
         const selectedType = document.getElementById('placeType').value;
         const searchOptions = {
@@ -356,41 +357,53 @@
             radius: 5000,
             sort: kakao.maps.services.SortBy.DISTANCE
         };
+
+        // '강'이나 '호수'의 경우 상업 필터망 조밀화를 위해 '관광명소 그룹코드(AT4)'를 추가해 질의
+        if (selectedType === '강' || selectedType === '호수') {
+            searchOptions.category_group_code = 'AT4'; // 관광명소 코드로 압축 필터링
+        }
+
         ps.keywordSearch(selectedType, placesSearchCB, searchOptions);
     }
 
-    // ── [버그 수정 반영] 모든 섹션 상업성 장소 강력 필터링 알고리즘 ──
     function placesSearchCB(data, status) {
         if (status === kakao.maps.services.Status.OK) {
             const filteredPlaces = data.filter(function(place) {
                 const category = place.category_name;
                 const name = place.place_name;
 
-                // 1. 카카오맵 카테고리 대분류 자체 필터링 (상업/주거용 대분류 원천 차단)
-                const forbiddenCategories = ['음식점', '서비스,산업', '가정,생활', '금융,보험', '의료,건강', '부동산', '기업', '회사'];
+                // 1. 원천 차단해야 하는 대분류군
+                const forbiddenCategories = ['음식점', '서비스,산업', '가정,생활', '금융,보험', '의료,건강', '부동산', '기업', '회사', '숙박'];
                 const hasForbiddenCategory = forbiddenCategories.some(cat => category.startsWith(cat));
                 if (hasForbiddenCategory) return false;
 
-                // 2. 장소 이름 및 소분류 키워드 정밀 필터링 (산, 호수, 강, 도서관 주변 상업시설 차단)
+                // 2. 강, 호수 상호명 노이즈를 완벽 제거하기 위한 초강력 차단 키워드 리스트
                 const commercialKeywords = [
-                    '식당', '맛집', '음식점', '카페', '커피', '베이커리', '디저트', '술집', '포차', '구이', '갈비', '가든', '치킨',
-                    '호텔', '모텔', '펜션', '숙박', '게스트하우스',
-                    '마트', '편의점', '상가', '몰', '스토어', '숍', '샵', '마켓', '문구', '서점', '유통',
-                    '아파트', '빌라', '주택', '단지', '마을', '팰리스', '자이', '힐스테이트', '푸르지오', '래미안',
-                    '학원', '독서실', '스터디카페', '어학원', '스터디룸',
-                    '병원', '의원', '약국', '교회', '절', '사찰', '빌딩', '타워', '오피스텔', '주차장', '주유소', '정비'
+                    '식당', '맛집', '음식점', '카페', '커피', '베이커리', '디저트', '술집', '포차', '구이', '갈비', '가든', '치킨', '포크', '한우', '회', '매운탕', '오리',
+                    '호텔', '모텔', '펜션', '숙박', '게스트하우스', '리조트', '캠핑장', '글램핑',
+                    '마트', '편의점', '상가', '몰', '스토어', '숍', '샵', '마켓', '유통', '백화점',
+                    '아파트', '빌라', '주택', '단지', '마을', '팰리스', '자이', '힐스테이트', '푸르지오', '래미안', '더샵',
+                    '학원', '독서실', '스터디카페', '교회', '절', '사찰', '빌딩', '타워', '오피스텔', '주차장', '주유소',
+                    '레저', '수상', '보트', '스키', '서핑', '크루즈', '선착장', '낚시', '어선', '공인중개사'
                 ];
                 
                 const isCommercialName = commercialKeywords.some(keyword => name.includes(keyword) || category.includes(keyword));
+                if (isCommercialName) return false;
+
+                // 3. 강/호수 탭에서 자연 지형, 테마공원, 문화 명소가 맞는지 추가 검증
+                const selectedType = document.getElementById('placeType').value;
+                if (selectedType === '강' || selectedType === '호수') {
+                    const validCategory = ['자연', '문화,예술', '여행', '테마공원', '지형'].some(cat => category.includes(cat));
+                    return validCategory;
+                }
                 
-                // 대분류와 이름 필터 모두 통과해야 진짜 휴식 공간으로 인정
-                return !isCommercialName;
+                return true;
             });
 
             if (filteredPlaces.length > 0) {
                 displayPlaces(filteredPlaces);
             } else {
-                alert('주변에 상업 및 주거 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다.');
+                alert('주변에 상업 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다.');
             }
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
             alert('주변 5km 이내에 해당 공간이 존재하지 않습니다.');
