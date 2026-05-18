@@ -163,7 +163,7 @@
         <div class="base-location-box">
             <label for="baseAddress">📍 어디 주변의 휴식 공간을 찾을까요?</label>
             <div class="input-group">
-                <input type="text" id="baseAddress" placeholder="예: 춘천역, 단양, 해운대 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
+                <input type="text" id="baseAddress" placeholder="예: 정발산역, 광교호수공원, 남산 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
                 <button onclick="setBaseLocation()">설정</button>
             </div>
         </div>
@@ -209,6 +209,9 @@
     let currentTab = 'nature'; 
     let searchHistory = JSON.parse(localStorage.getItem('restSpaceHistory')) || []; 
 
+    // 기준점 중심 좌표 변수 (초기값 서울시청)
+    let currentCenterLatLng = new kakao.maps.LatLng(37.566826, 126.9786567);
+
     const markerColors = {
         '산': '#7fa99b',     
         '공원': '#a2b997',   
@@ -222,7 +225,7 @@
     kakao.maps.load(function() {
         const mapContainer = document.getElementById('map');
         const mapOptions = {
-            center: new kakao.maps.LatLng(37.566826, 126.9786567), 
+            center: currentCenterLatLng, 
             level: 5
         };
 
@@ -256,9 +259,9 @@
             navigator.geolocation.getCurrentPosition(function(position) {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                const locPosition = new kakao.maps.LatLng(lat, lon);
-                map.setCenter(locPosition);
-                createBaseMarker(locPosition);
+                currentCenterLatLng = new kakao.maps.LatLng(lat, lon);
+                map.setCenter(currentCenterLatLng);
+                createBaseMarker(currentCenterLatLng);
             });
         }
     }
@@ -273,9 +276,9 @@
 
         ps.keywordSearch(address, function(data, status) {
             if (status === kakao.maps.services.Status.OK) {
-                const searchCenter = new kakao.maps.LatLng(data[0].y, data[0].x);
-                map.setCenter(searchCenter);
-                createBaseMarker(searchCenter);
+                currentCenterLatLng = new kakao.maps.LatLng(data[0].y, data[0].x);
+                map.setCenter(currentCenterLatLng);
+                createBaseMarker(currentCenterLatLng);
                 
                 if (currentTab !== 'history') {
                     searchPlaces();
@@ -335,7 +338,7 @@
         const selectBox = document.getElementById('placeType');
         if (type === 'nature') {
             selectBox.innerHTML = `
-                <option value="산">⛰️ 카카오등록 진짜 산</option>
+                <option value="산">⛰️ 자연 지형 산</option>
                 <option value="공원">🌳 한적한 공원</option>
                 <option value="호수">🏞️ 잔잔한 호수</option>
                 <option value="강">🌊 시원한 강가</option>
@@ -349,37 +352,29 @@
         }
     }
 
+    // ── [수정] 범위 확장 코드를 전면 삭제하고 원래의 반경 5km 고정형으로 환원 ──
     function searchPlaces() {
         const selectedType = document.getElementById('placeType').value;
-        const currentLevel = map.getLevel(); 
         
-        let searchOptions = {
-            sort: kakao.maps.services.SortBy.DISTANCE
+        const searchOptions = {
+            location: currentCenterLatLng, // 설정된 기준점 중심
+            radius: 5000,                  // 요청했던 반경 5km 고정 검색
+            sort: kakao.maps.services.SortBy.DISTANCE,
+            category_group_code: 'AT4'     // 원본 소스 정밀 추출용 관광명소 시스템 코드
         };
-
-        if (currentLevel >= 8) {
-            searchOptions.location = map.getCenter();
-            searchOptions.radius = 20000; 
-        } else {
-            searchOptions.bounds = map.getBounds();
-        }
-
-        // 지형 필터 정밀화를 위해 전 섹션에서 카카오 관광명소 코드를 연동해 원본 소스를 타이트하게 가져옴
-        searchOptions.category_group_code = 'AT4'; 
 
         ps.keywordSearch(selectedType, placesSearchCB, searchOptions);
     }
 
-    // ── [대수정] 카카오 카테고리 완전 일치형 지형/시설 분류 알고리즘 ──
+    // ── 카카오 공식 카테고리 깊이 매칭 검증기 (상업 매장 원천 배제) ──
     function placesSearchCB(data, status) {
         if (status === kakao.maps.services.Status.OK) {
             const selectedType = document.getElementById('placeType').value;
 
             const filteredPlaces = data.filter(function(place) {
-                const category = place.category_name; // 예: "자연 > 산" 또는 "문화,예술 > 문화시설 > 미술관"
+                const category = place.category_name; 
 
                 if (selectedType === '산') {
-                    // 카카오 카테고리 대분류가 정확하게 '자연 > 산'인 지형 데이터만 추출
                     return category.startsWith('자연 > 산');
                 } 
                 else if (selectedType === '공원') {
@@ -392,7 +387,6 @@
                     return category.startsWith('자연 > 강');
                 } 
                 else if (selectedType === '도서관') {
-                    // 상호명 허수 원천 배제: 카카오 공식 카테고리가 도서관인 공공/전문 시설만 인정
                     return category.includes('문화시설 > 도서관');
                 } 
                 else if (selectedType === '미술관') {
@@ -408,13 +402,12 @@
             if (filteredPlaces.length > 0) {
                 displayPlaces(filteredPlaces);
             } else {
-                alert('현재 검색 범위 안에는 카카오맵 분류 체계와 일치하는 순수한 지형 및 문화 시설이 발견되지 않았습니다. 지도를 옮겨보세요!');
+                alert('설정하신 기준점 주변 5km 이내에 카카오맵 분류가 정확히 일치하는 순수 휴식 시설/지형이 없습니다.');
             }
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-            alert('현재 검색 범위 내에 데이터가 존재하지 않습니다.');
+            alert('주변 5km 이내에 해당 장소 결과가 아예 존재하지 않습니다.');
         } else {
-            console.error("카카오맵 API 응답 상태 오류 코드:", status);
-            alert('검색 범위를 조절했습니다. 지도를 조금만 확대(Zoom-in)한 후 다시 🔍 버튼을 눌러주세요!');
+            alert('검색 중 오류가 발생했습니다.');
         }
     }
 
@@ -444,9 +437,8 @@
             listEl.appendChild(itemEl);
         }
         
-        if(map.getLevel() <= 7) {
-            map.setBounds(bounds);
-        }
+        // 반경 5km 검색 결과물에 깔끔하게 맞춤 화면 지정
+        map.setBounds(bounds);
     }
 
     function createCustomOverlayMarker(position, type, placeData) {
