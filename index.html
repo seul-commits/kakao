@@ -163,7 +163,7 @@
         <div class="base-location-box">
             <label for="baseAddress">📍 어디 주변의 휴식 공간을 찾을까요?</label>
             <div class="input-group">
-                <input type="text" id="baseAddress" placeholder="예: 강남역, 정발산동 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
+                <input type="text" id="baseAddress" placeholder="예: 한강진역, 충주호, 경포대 (비우면 내 위치)" onkeypress="if(event.keyCode==13) setBaseLocation()">
                 <button onclick="setBaseLocation()">설정</button>
             </div>
         </div>
@@ -249,6 +249,9 @@
         updateSelectOptions('nature');
         getCurrentLocation();
         renderHistoryList();
+
+        // [추가 기능] 사용자가 지도를 움직이거나 줌을 변경할 때마다 자동으로 재검색하고 싶다면 아래 주석을 해제해봐!
+        // kakao.maps.event.addListener(map, 'idle', function() { if (currentTab !== 'history') searchPlaces(); });
     });
 
     function getCurrentLocation() {
@@ -349,18 +352,17 @@
         }
     }
 
-    // ── [강/호수 버그 수정] 카카오 카테고리 그룹 코드를 이용한 정밀화 ──
+    // ── [동적 범위 수정] 지도의 확대/축소 영역 기반 바운드 검색 전환 ──
     function searchPlaces() {
         const selectedType = document.getElementById('placeType').value;
         const searchOptions = {
-            location: map.getCenter(),
-            radius: 5000,
+            // location과 radius(5000)를 완전히 제거하고 현재 지도 화면 범위를 지정!
+            bounds: map.getBounds(), 
             sort: kakao.maps.services.SortBy.DISTANCE
         };
 
-        // '강'이나 '호수'의 경우 상업 필터망 조밀화를 위해 '관광명소 그룹코드(AT4)'를 추가해 질의
         if (selectedType === '강' || selectedType === '호수') {
-            searchOptions.category_group_code = 'AT4'; // 관광명소 코드로 압축 필터링
+            searchOptions.category_group_code = 'AT4'; 
         }
 
         ps.keywordSearch(selectedType, placesSearchCB, searchOptions);
@@ -372,12 +374,10 @@
                 const category = place.category_name;
                 const name = place.place_name;
 
-                // 1. 원천 차단해야 하는 대분류군
                 const forbiddenCategories = ['음식점', '서비스,산업', '가정,생활', '금융,보험', '의료,건강', '부동산', '기업', '회사', '숙박'];
                 const hasForbiddenCategory = forbiddenCategories.some(cat => category.startsWith(cat));
                 if (hasForbiddenCategory) return false;
 
-                // 2. 강, 호수 상호명 노이즈를 완벽 제거하기 위한 초강력 차단 키워드 리스트
                 const commercialKeywords = [
                     '식당', '맛집', '음식점', '카페', '커피', '베이커리', '디저트', '술집', '포차', '구이', '갈비', '가든', '치킨', '포크', '한우', '회', '매운탕', '오리',
                     '호텔', '모텔', '펜션', '숙박', '게스트하우스', '리조트', '캠핑장', '글램핑',
@@ -390,7 +390,6 @@
                 const isCommercialName = commercialKeywords.some(keyword => name.includes(keyword) || category.includes(keyword));
                 if (isCommercialName) return false;
 
-                // 3. 강/호수 탭에서 자연 지형, 테마공원, 문화 명소가 맞는지 추가 검증
                 const selectedType = document.getElementById('placeType').value;
                 if (selectedType === '강' || selectedType === '호수') {
                     const validCategory = ['자연', '문화,예술', '여행', '테마공원', '지형'].some(cat => category.includes(cat));
@@ -403,10 +402,10 @@
             if (filteredPlaces.length > 0) {
                 displayPlaces(filteredPlaces);
             } else {
-                alert('주변에 상업 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다.');
+                alert('현재 지도 화면 안에 상업 매장을 제외한 순수한 휴식 공간이 발견되지 않았습니다. 지도를 조금 더 축소(Zoom Out)해 보세요!');
             }
         } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-            alert('주변 5km 이내에 해당 공간이 존재하지 않습니다.');
+            alert('현재 화면 범위 내에 해당 공간이 존재하지 않습니다. 지도를 축소해서 범위를 넓혀보세요!');
         } else {
             alert('검색 중 시스템 오류가 발생했습니다.');
         }
@@ -437,7 +436,11 @@
 
             listEl.appendChild(itemEl);
         }
-        map.setBounds(bounds);
+        
+        // 지도를 전국 단위로 너무 크게 줄였을 때는 bounds 조정을 생략하여 사용자의 줌 상태를 유지해줌
+        if(map.getLevel() <= 7) {
+            map.setBounds(bounds);
+        }
     }
 
     function createCustomOverlayMarker(position, type, placeData) {
